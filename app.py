@@ -7,25 +7,22 @@ import io
 from io import BytesIO
 import zipfile
 import json
-
+#CODIGO CON EXTRACION EN CSV
 st.set_page_config(page_title="DataFrame Filter App")
 
 st.header("Datos de Mercado ~ Importaciones")
 
 # Función para descargar el DataFrame filtrado como archivo comprimido
 @st.cache_data
-def download_compressed_xlsx(df):
-    output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df.to_excel(writer, index=False, sheet_name='Sheet1')
-
-    output.seek(0)
-    zip_buffer = io.BytesIO()
-    with zipfile.ZipFile(zip_buffer, "w") as zip_file:
-        zip_file.writestr("filtered_dataframe.xlsx", output.getvalue())
-    
-    zip_buffer.seek(0)
-    return zip_buffer.getvalue()
+def download_compressed_csv(filtered_df):
+    buffer = BytesIO()
+    with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        # Guardar el DataFrame como archivo CSV comprimido
+        csv_buffer = BytesIO()
+        filtered_df.to_csv(csv_buffer, index=False)
+        zip_file.writestr("filtered_dataframe.csv", csv_buffer.getvalue())
+    buffer.seek(0)
+    return buffer.getvalue()
 
 # Input para las credenciales de GCP
 gcp_credentials = st.file_uploader("Sube tus credenciales de Google Cloud (archivo JSON)", type="json")
@@ -48,24 +45,46 @@ if gcp_credentials and gemini_api_key:
         return f"""
         Eres un asistente de IA especializado en análisis de datos con Python y la librería Pandas. 
         El usuario tiene un DataFrame llamado 'df' y quiere filtrarlo según las condiciones proporcionadas.
-        
+    
         Las columnas y tipos de dato para el dataframe son:
-        FRV, FECHA (Date), NIT, REGISTRO, CHASIS, MOTOR, PARTIDA, AÑO_MODELO (numérico), MARCA, CLASE, MODELO, VERSION, CILINDRADA (numérico), 
-        PAIS_ORIGEN, NRO_PUERTAS (numérico), TRACCION, CAPACIDAD_CARGA, NRO_RUEDAS, COMBUSTIBLE, AÑO_FABRICACION (numérico), DUI, FOB, PROVEEDOR, 
-        DOCUMENTO, IMPORTADOR, LEVANTE, CANAL, FOB_2, FOB_3, ÚLTIMO_ENVÍO_RUAT, CLASE_SELECT, GAP_IMP (numérico), 
-        MARCA_SELECT, TIPO_SELECT, CLUST_IMPORTADOR (entero), IMPORTADOR_AGRUPADO (factor), MERCADO, TIPO_COMERCIO, COMPETENCIA, SUBSEGMENTO.
+        - FECHA: datetime
+        - NIT: object
+        - CHASIS: object
+        - AÑO_MODELO: float
+        - MARCA: object
+        - CLASE: object
+        - MODELO: object
+        - VERSION: object
+        - CILINDRADA: float
+        - PAIS_ORIGEN: object
+        - NRO_PUERTAS: float
+        - TRACCION: object
+        - CAPACIDAD_CARGA: float
+        - NRO_RUEDAS: float
+        - COMBUSTIBLE: object
+        - AÑO_FABRICACION: float
+        - CLASE_SELECT: object
+        - GAP_IMP: float
+        - MARCA_SELECT: object
+        - TIPO_SELECT: object
+        - CLUST_IMPORTADOR: float
+        - IMPORTADOR_AGRUPADO: object
+        - MERCADO: object
+        - TIPO_COMERCIO: object
+        - COMPETENCIA: object
+        - SUBSEGMENTO: object
 
-        Cuando el usuario pida "fecha", "año" o "gestión", usa solo la columna "FECHA" con funciones de fecha/hora.
-        Cuando el usuario mencione MARCA, usa solo el campo MARCA y convierte el valor de entrada a mayúsculas.
-        Cuando el usuario pida subsegmento, convierte el valor de entrada a mayúsculas.
-        Cuando el usuario pida el Importador, usa solamente y nada mas que el campo "importador_agrupado".
+        Cuando el usuario pida "FECHA", "AÑO" o "GESTIÓN", usa solo la columna "FECHA" con funciones de fecha/hora.
+        Cuando el usuario mencione "MARCA", usa solo el campo "MARCA" y convierte el valor de entrada a mayúsculas.
+        Cuando el usuario pida "SUBSEGMENTO", convierte el valor de entrada a mayúsculas.
+        Cuando el usuario pida el "IMPORTADOR", usa solamente y nada más que el campo "IMPORTADOR_AGRUPADO".
         Todos los nombres de las variables se encuentran en mayúsculas, no necesariamente los valores de cada variable.
 
-        Las únicas Opciones disponibles en los campos tipo_comercio, mercado, marca_select son:
-        - "tipo_comercio": "Minorista", "Distribuidor"
-        - "mercado": "Gris", "Formal"
-        - "marca_select" y "tipo_select": "YES", "NO"
-        - "Competencia": "COMPETENCIA","OTRO"
+        Las únicas opciones disponibles en los campos "TIPO_COMERCIO", "MERCADO", "MARCA_SELECT" son:
+        - "TIPO_COMERCIO": "Minorista", "Distribuidor"
+        - "MERCADO": "Gris", "Formal"
+        - "MARCA_SELECT" y "TIPO_SELECT": "YES", "NO"
+        - "COMPETENCIA": "COMPETENCIA", "OTRO"
 
         Proporciona código Python para filtrar 'df' basado en: {user_input}.
         Devuelve solo el código sin ningún comentario.
@@ -101,21 +120,12 @@ if gcp_credentials and gemini_api_key:
     def load_data():
         bucket_name = "bkmarket"
         source_blob_name = "tablon.parquet"
-
         storage_client = storage.Client()
-
         bucket = storage_client.bucket(bucket_name)
-
         blob = bucket.blob(source_blob_name)
-
         content = blob.download_as_bytes()
-
         df = pd.read_parquet(BytesIO(content))
-
         df['FECHA'] = pd.to_datetime(df['FECHA'], errors='coerce')
-        df.drop(['Year', 'Mes'], axis=1, inplace=True)
-        df.columns = df.columns.str.upper()
-
         return df
 
     df = load_data()
@@ -144,13 +154,12 @@ if gcp_credentials and gemini_api_key:
             st.dataframe(filtered_df.head())
             
             with st.spinner('Generando archivo comprimido...'):
-                zip_data = download_compressed_xlsx(filtered_df)
+                zip_data = download_compressed_csv(filtered_df)
                 st.download_button(
                     label="Descargar DataFrame filtrado (comprimido)",
                     data=zip_data,
                     file_name="filtered_dataframe.zip",
                     mime="application/zip")
-
         except ValueError as e:
             st.error(f"Error: {e}")
 
