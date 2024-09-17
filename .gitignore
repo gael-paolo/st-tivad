@@ -1,0 +1,14 @@
+# Ignorar archivos de credenciales
+gj.json
+Gemini_Key.txt
+
+# Ignorar directorios de caché
+__pycache__/
+*.pyc
+
+# Ignorar archivos específicos de IDE
+.vscode/
+.idea/
+
+# Ignorar archivos de configuración local
+.env
