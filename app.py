@@ -43,49 +43,43 @@ if gcp_credentials and gemini_api_key:
 
     def apply_prompt_template(user_input):
         return f"""
-        Eres un asistente de IA especializado en análisis de datos con Python y la librería Pandas. 
+        Eres un asistente de IA especializado en análisis de datos con Python y la librería Pandas.
         El usuario tiene un DataFrame llamado 'df' y quiere filtrarlo según las condiciones proporcionadas.
-    
-        Las columnas y tipos de dato para el dataframe son:
-        - FECHA: datetime
-        - NIT: object
-        - CHASIS: object
-        - AÑO_MODELO: float
-        - MARCA: object
-        - CLASE: object
-        - MODELO: object
-        - VERSION: object
-        - CILINDRADA: float
-        - PAIS_ORIGEN: object
-        - NRO_PUERTAS: float
-        - TRACCION: object
-        - CAPACIDAD_CARGA: float
-        - NRO_RUEDAS: float
-        - COMBUSTIBLE: object
-        - AÑO_FABRICACION: float
-        - CLASE_SELECT: object
-        - GAP_IMP: float
-        - MARCA_SELECT: object
-        - TIPO_SELECT: object
-        - CLUST_IMPORTADOR: float
-        - IMPORTADOR_AGRUPADO: object
-        - MERCADO: object
-        - TIPO_COMERCIO: object
-        - COMPETENCIA: object
-        - SUBSEGMENTO: object
+        
+        Las columnas y tipos de datos para el DataFrame son: 
+        FECHA: datetime 
+        FRV: object, es un identificador alfanumérico
+        CHASIS: object, otro identificador
+        AÑO_MODELO: int64 (número entero, representa un año)
+        MARCA: object 
+        CLASE: object 
+        MODELO: object 
+        VERSION: object (cadena de texto, puede estar vacía)
+        CILINDRADA: int64 
+        PAIS_ORIGEN: object 
+        NRO_PUERTAS: int64 
+        TRACCION: object 
+        COMBUSTIBLE: object 
+        AÑO_FABRICACION: int64 
+        CLASE_SELECT: object 
+        GAP_IMP: int64 
+        MARCA_SELECT: object 
+        FY: int64 
+        IMPORTADOR_AGRUPADO: object 
+        PROVEEDOR_AGRUPADO: object 
+        LEGAL: object 
+        MERCADO: object 
 
+        Reglas adicionales:
         Cuando el usuario pida "FECHA", "AÑO" o "GESTIÓN", usa solo la columna "FECHA" con funciones de fecha/hora.
+        Cuando el usuario pida "AÑO FISCAL" usa solo la columna "FY".
         Cuando el usuario mencione "MARCA", usa solo el campo "MARCA" y convierte el valor de entrada a mayúsculas.
-        Cuando el usuario pida "SUBSEGMENTO", convierte el valor de entrada a mayúsculas.
         Cuando el usuario pida el "IMPORTADOR", usa solamente y nada más que el campo "IMPORTADOR_AGRUPADO".
-        Todos los nombres de las variables se encuentran en mayúsculas, no necesariamente los valores de cada variable.
-
-        Las únicas opciones disponibles en los campos "TIPO_COMERCIO", "MERCADO", "MARCA_SELECT" son:
-        - "TIPO_COMERCIO": "Minorista", "Distribuidor"
-        - "MERCADO": "Gris", "Formal"
-        - "MARCA_SELECT" y "TIPO_SELECT": "YES", "NO"
-        - "COMPETENCIA": "COMPETENCIA", "OTRO"
-
+        Cuando el usuario pida el "EXPORTADOR" o "PROVEEDOR", usa solamente y nada más que el campo "PROVEEDOR_AGRUPADO".
+        Todos los nombres de las variables están en mayúsculas, aunque no necesariamente los valores de cada variable.
+        Opciones limitadas para ciertas columnas:
+        "MERCADO": "GRIS", "FORMAL"
+        "LEGAL": "LEGAL", "NO_LEGAL"
         Proporciona código Python para filtrar 'df' basado en: {user_input}.
         Devuelve solo el código sin ningún comentario.
         """
